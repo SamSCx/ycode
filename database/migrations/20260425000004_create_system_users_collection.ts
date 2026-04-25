@@ -20,8 +20,8 @@ export async function up(knex: Knex): Promise<void> {
   // We'll generate a hardcoded UUID so the system user profile collection has a known ID,
   // making it easier to reference in code or triggers if needed.
   // Wait, the CMS handles it via UUID, let's just generate a specific one.
-  const collectionId = 'system-collection-user-profiles';
-  const collectionUuid = '00000000-0000-0000-0000-000000000001';
+  const collectionId = 'c011ec71-0000-4000-8000-000000000001';
+  const collectionUuid = 'c011ec71-0000-4000-8000-000000000002';
 
   // 2. Insert User Profiles collection (Draft & Published)
   await knex('collections').insert([
@@ -46,11 +46,11 @@ export async function up(knex: Knex): Promise<void> {
   // 3. Define Standard Fields
   // We use hardcoded IDs for system fields to ensure they can be safely referenced.
   const fields = [
-    { id: 'system-field-user-id', name: 'User ID', key: 'id', type: 'text', fillable: false, hidden: true, order: 0 },
-    { id: 'system-field-user-name', name: 'Name', key: 'name', type: 'text', fillable: true, hidden: false, order: 1 },
-    { id: 'system-field-user-slug', name: 'Slug', key: 'slug', type: 'text', fillable: true, hidden: false, order: 2 },
-    { id: 'system-field-user-email', name: 'Email', key: 'email', type: 'email', fillable: true, hidden: false, order: 3 },
-    { id: 'system-field-user-avatar', name: 'Avatar URL', key: 'avatar_url', type: 'image', fillable: true, hidden: false, order: 4 },
+    { id: 'f1e1d000-0000-4000-8000-000000000001', name: 'User ID', key: 'id', type: 'text', fillable: false, hidden: true, order: 0 },
+    { id: 'f1e1d000-0000-4000-8000-000000000002', name: 'Name', key: 'name', type: 'text', fillable: true, hidden: false, order: 1 },
+    { id: 'f1e1d000-0000-4000-8000-000000000003', name: 'Slug', key: 'slug', type: 'text', fillable: true, hidden: false, order: 2 },
+    { id: 'f1e1d000-0000-4000-8000-000000000004', name: 'Email', key: 'email', type: 'email', fillable: true, hidden: false, order: 3 },
+    { id: 'f1e1d000-0000-4000-8000-000000000005', name: 'Avatar URL', key: 'avatar_url', type: 'image', fillable: true, hidden: false, order: 4 },
   ];
 
   const fieldRows = fields.flatMap((field) => {
@@ -86,7 +86,7 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
-  const collectionId = 'system-collection-user-profiles';
+  const collectionId = 'c011ec71-0000-4000-8000-000000000001';
 
   await knex('collection_fields')
     .where({ collection_id: collectionId })
