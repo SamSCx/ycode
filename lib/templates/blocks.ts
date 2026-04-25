@@ -12,6 +12,7 @@ import { contentTemplates } from './content';
 import { actionTemplates } from './actions';
 import { mediaTemplates } from './media';
 import { formTemplates } from './forms';
+import { authTemplates } from './auth';
 import { utilityTemplates } from './utilities';
 import { layoutTemplates } from './layouts';
 
@@ -22,6 +23,7 @@ const blocks = {
   ...actionTemplates,
   ...mediaTemplates,
   ...formTemplates,
+  ...authTemplates,
   ...utilityTemplates,
 };
 
@@ -144,7 +146,7 @@ export function getBlockName(index: string): string | null {
 /**
  * Get all blocks by category
  */
-export function getBlocksByCategory(category: 'structure' | 'content' | 'actions' | 'media' | 'forms' | 'utilities') {
+export function getBlocksByCategory(category: 'structure' | 'content' | 'actions' | 'media' | 'forms' | 'auth' | 'utilities') {
   switch (category) {
     case 'structure':
       return Object.keys(structureTemplates);
@@ -156,6 +158,8 @@ export function getBlocksByCategory(category: 'structure' | 'content' | 'actions
       return Object.keys(mediaTemplates);
     case 'forms':
       return Object.keys(formTemplates);
+    case 'auth':
+      return Object.keys(authTemplates);
     case 'utilities':
       return Object.keys(utilityTemplates);
     default:

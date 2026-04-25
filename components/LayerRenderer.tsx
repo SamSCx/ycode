@@ -44,6 +44,9 @@ import PaginatedCollection from '@/components/PaginatedCollection';
 import LoadMoreCollection from '@/components/LoadMoreCollection';
 import FilterableCollection from '@/components/FilterableCollection';
 import LocaleSelector from '@/components/layers/LocaleSelector';
+import AuthLogin from '@/components/auth/AuthLogin';
+import AuthRegister from '@/components/auth/AuthRegister';
+import AuthForgotPassword from '@/components/auth/AuthForgotPassword';
 import { usePagesStore } from '@/stores/usePagesStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { generateLinkHref, resolveLinkAttrs, isLinkAtCollectionBoundary, type LinkResolutionContext } from '@/lib/link-utils';
@@ -2914,6 +2917,19 @@ const LayerItem: React.FC<{
             );
           })}
         </>
+      );
+    }
+
+    // Special handling for Auth components
+    if (['authLogin', 'authRegister', 'authForgotPassword'].includes(layer.name)) {
+      const AuthComp = layer.name === 'authLogin' ? AuthLogin :
+                       layer.name === 'authRegister' ? AuthRegister :
+                       AuthForgotPassword;
+
+      return (
+        <Tag {...elementProps} style={mergedStyle}>
+          <AuthComp {...(layer.settings?.auth || {})} />
+        </Tag>
       );
     }
 

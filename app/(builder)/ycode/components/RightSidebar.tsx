@@ -45,6 +45,7 @@ import VideoSettings, { type VideoSettingsValue } from './VideoSettings';
 import AudioSettings, { type AudioSettingsValue } from './AudioSettings';
 import IconSettings, { type IconSettingsValue } from './IconSettings';
 import FormSettings from './FormSettings';
+import AuthSettings from './AuthSettings';
 import FilterSettings from './FilterSettings';
 import AlertSettings from './AlertSettings';
 import HTMLEmbedSettings from './HTMLEmbedSettings';
@@ -2532,6 +2533,7 @@ const RightSidebar = React.memo(function RightSidebar({
                           </div>
                       )}
 
+
                       {/* Total Limit */}
                       <div className="grid grid-cols-3">
                         <Label variant="muted">Total limit</Label>
@@ -2669,6 +2671,11 @@ const RightSidebar = React.memo(function RightSidebar({
             />
 
             <FormSettings
+              layer={selectedLayer}
+              onLayerUpdate={handleLayerUpdate}
+            />
+
+            <AuthSettings
               layer={selectedLayer}
               onLayerUpdate={handleLayerUpdate}
             />
