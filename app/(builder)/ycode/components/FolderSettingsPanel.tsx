@@ -73,6 +73,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const [authEnabled, setAuthEnabled] = useState(false);
+  const [authType, setAuthType] = useState<'password' | 'login'>('password');
   const [authPassword, setAuthPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -92,6 +93,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
     slug: string;
     pageFolderId: string | null;
     authEnabled: boolean;
+    authType: 'password' | 'login';
     authPassword: string;
   } | null>(null);
 
@@ -108,7 +110,8 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
       slug !== initial.slug ||
       pageFolderId !== initial.pageFolderId ||
       authEnabled !== initial.authEnabled ||
-      authPassword !== initial.authPassword
+      authType !== initial.authType ||
+      (authType === 'password' && authPassword !== initial.authPassword)
     );
 
     // Clear rejected folder when user makes changes (allows them to try navigating again)
@@ -118,7 +121,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
 
     return hasChanges;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, slug, pageFolderId, authEnabled, authPassword, saveCounter]);
+  }, [name, slug, pageFolderId, authEnabled, authType, authPassword, saveCounter]);
 
   // Expose method to check for unsaved changes externally
   useImperativeHandle(ref, () => ({
@@ -193,12 +196,14 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
       const initialSlug = currentFolder.slug;
       const initialFolderId = currentFolder.page_folder_id;
       const initialAuthEnabled = currentFolder.settings?.auth?.enabled || false;
+      const initialAuthType = currentFolder.settings?.auth?.type || 'password';
       const initialAuthPassword = currentFolder.settings?.auth?.password || '';
 
       setName(initialName);
       setSlug(initialSlug);
       setPageFolderId(initialFolderId);
       setAuthEnabled(initialAuthEnabled);
+      setAuthType(initialAuthType);
       setAuthPassword(initialAuthPassword);
 
       // Save initial values for comparison
@@ -207,6 +212,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
         slug: initialSlug,
         pageFolderId: initialFolderId,
         authEnabled: initialAuthEnabled,
+        authType: initialAuthType,
         authPassword: initialAuthPassword,
       };
     } else {
@@ -214,6 +220,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
       setSlug('');
       setPageFolderId(null);
       setAuthEnabled(false);
+      setAuthType('password');
       setAuthPassword('');
 
       // Reset initial values for new folder
@@ -222,6 +229,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
         slug: '',
         pageFolderId: null,
         authEnabled: false,
+        authType: 'password',
         authPassword: '',
       };
     }
@@ -264,6 +272,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
       setSlug('');
       setPageFolderId(null);
       setAuthEnabled(false);
+      setAuthType('password');
       setAuthPassword('');
       setError(null);
       initialValuesRef.current = null;
@@ -312,6 +321,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
         setSlug(initialValuesRef.current.slug);
         setPageFolderId(initialValuesRef.current.pageFolderId);
         setAuthEnabled(initialValuesRef.current.authEnabled);
+        setAuthType(initialValuesRef.current.authType);
         setAuthPassword(initialValuesRef.current.authPassword);
       }
 
@@ -330,6 +340,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
         setSlug(initialValuesRef.current.slug);
         setPageFolderId(initialValuesRef.current.pageFolderId);
         setAuthEnabled(initialValuesRef.current.authEnabled);
+        setAuthType(initialValuesRef.current.authType);
         setAuthPassword(initialValuesRef.current.authPassword);
       }
 
@@ -431,7 +442,8 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
         settings: {
           auth: {
             enabled: authEnabled,
-            password: trimmedAuthPassword,
+            type: authType,
+            password: authType === 'password' ? trimmedAuthPassword : '',
           },
         },
       });
@@ -449,6 +461,7 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
         slug: trimmedSlug,
         pageFolderId,
         authEnabled,
+        authType,
         authPassword: trimmedAuthPassword,
       };
 
@@ -602,41 +615,61 @@ const FolderSettingsPanel = React.forwardRef<FolderSettingsPanelHandle, FolderSe
 
                   <Field orientation="horizontal" className="flex flex-row-reverse!">
                     <FieldContent>
-                      <FieldLabel htmlFor="passwordProtected">
-                        Password protected
+                      <FieldLabel htmlFor="folderProtected">
+                        Folder protection
                       </FieldLabel>
                       <FieldDescription>
-                        Restrict access to all pages in this folder and its sub-folders. Setting a password will override any password set on a parent folder.
+                        Restrict access to all pages in this folder and its sub-folders. This will override any protection set on a parent folder.
                       </FieldDescription>
                     </FieldContent>
                     <Checkbox
-                      id="passwordProtected"
+                      id="folderProtected"
                       checked={authEnabled}
                       onCheckedChange={(checked) => setAuthEnabled(checked === true)}
                     />
                   </Field>
 
                   {authEnabled && (
-                    <Field>
-                      <FieldLabel>Password</FieldLabel>
-                      <div className="flex gap-2">
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          value={authPassword}
-                          onChange={(e) => setAuthPassword(e.target.value)}
-                          placeholder="Enter password"
-                        />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          className="w-18"
-                          onClick={() => setShowPassword(!showPassword)}
+                    <>
+                      <Field>
+                        <FieldLabel>Protection type</FieldLabel>
+                        <Select
+                          value={authType}
+                          onValueChange={(val: any) => setAuthType(val)}
                         >
-                          {showPassword ? 'Hide' : 'Show'}
-                        </Button>
-                      </div>
-                    </Field>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="password">Password</SelectItem>
+                            <SelectItem value="login">User Login</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+
+                      {authType === 'password' && (
+                        <Field>
+                          <FieldLabel>Password</FieldLabel>
+                          <div className="flex gap-2">
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              value={authPassword}
+                              onChange={(e) => setAuthPassword(e.target.value)}
+                              placeholder="Enter password"
+                            />
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="w-18"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? 'Hide' : 'Show'}
+                            </Button>
+                          </div>
+                        </Field>
+                      )}
+                    </>
                   )}
                 </FieldGroup>
               </FieldSet>

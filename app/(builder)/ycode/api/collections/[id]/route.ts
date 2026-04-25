@@ -73,6 +73,16 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    // Check if collection is a system collection
+    const collection = await getCollectionById(id, false);
+    if (!collection) {
+      return noCache({ error: 'Collection not found' }, 404);
+    }
+
+    if (collection.is_system) {
+      return noCache({ error: 'System collections cannot be deleted' }, 403);
+    }
+
     // Get all items in this collection (draft versions)
     const { items } = await getItemsByCollectionId(id, false);
 

@@ -4,7 +4,7 @@ import { fetchHomepage, fetchErrorPage, PaginationContext } from '@/lib/page-fet
 import PageRenderer from '@/components/PageRenderer';
 import PasswordForm from '@/components/PasswordForm';
 import { fetchGlobalPageSettings } from '@/lib/generate-page-metadata';
-import { parseAuthCookie, getPasswordProtection, fetchFoldersForAuth } from '@/lib/page-auth';
+import { parseAuthCookie, getPageProtection, fetchFoldersForAuth } from '@/lib/page-auth';
 import { getSettingByKey } from '@/lib/repositories/settingsRepository';
 
 // Internal pagination path: always dynamic/no-store.
@@ -58,11 +58,11 @@ export default async function DynamicHome({ searchParams }: DynamicHomeProps) {
   }
 
   const folders = await fetchFoldersForAuth(true);
-  const protectionCheck = getPasswordProtection(data.page, folders, null);
+  const protectionCheck = await getPageProtection(data.page, folders, null);
 
   if (protectionCheck.isProtected) {
     const authCookie = await parseAuthCookie();
-    const protection = getPasswordProtection(data.page, folders, authCookie);
+    const protection = await getPageProtection(data.page, folders, authCookie);
 
     if (!protection.isUnlocked) {
       const errorPageData = await fetchErrorPage(401, true);
@@ -91,14 +91,20 @@ export default async function DynamicHome({ searchParams }: DynamicHomeProps) {
         <div className="min-h-screen flex items-center justify-center bg-white">
           <div className="text-center max-w-md px-4">
             <h1 className="text-6xl font-bold text-gray-900 mb-4">401</h1>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Password Protected</h2>
-            <p className="text-gray-600 mb-8">Enter the password to continue.</p>
-            <PasswordForm
-              pageId={protection.protectedBy === 'page' ? protection.protectedById : undefined}
-              folderId={protection.protectedBy === 'folder' ? protection.protectedById : undefined}
-              redirectUrl="/"
-              isPublished={true}
-            />
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              {protection.type === 'login' ? 'Login Required' : 'Password Protected'}
+            </h2>
+            <p className="text-gray-600 mb-8">
+              {protection.type === 'login' ? 'Please log in to view this page.' : 'Enter the password to continue.'}
+            </p>
+            {protection.type !== 'login' && (
+              <PasswordForm
+                pageId={protection.protectedBy === 'page' ? protection.protectedById : undefined}
+                folderId={protection.protectedBy === 'folder' ? protection.protectedById : undefined}
+                redirectUrl="/"
+                isPublished={true}
+              />
+            )}
           </div>
         </div>
       );

@@ -642,7 +642,8 @@ export interface PageSettings {
   };
   auth?: {
     enabled: boolean;
-    password: string;
+    type?: 'password' | 'login';
+    password?: string;
   };
   seo?: {
     image: StringAssetId | FieldVariable | null; // Asset ID or Field Variable (image field)
@@ -671,7 +672,8 @@ export interface PageLayers {
 export interface PageFolderSettings {
   auth?: {
     enabled: boolean;
-    password: string;
+    type?: 'password' | 'login';
+    password?: string;
   };
 }
 
@@ -777,6 +779,17 @@ export interface SiteSettings {
   site_description: string;
   theme?: string;
   logo_url?: string;
+}
+
+export interface AuthSettings {
+  providers: {
+    email_password: boolean;
+    google: boolean;
+  };
+  redirects: {
+    after_login: string;
+    after_logout: string;
+  };
 }
 
 export interface Redirect {
@@ -962,6 +975,7 @@ export interface Collection {
   sorting: CollectionSorting | null;
   order: number;
   is_published: boolean;
+  is_system?: boolean;
   draft_items_count?: number;
   has_published_version?: boolean;
 }

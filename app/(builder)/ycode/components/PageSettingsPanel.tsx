@@ -134,6 +134,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
   const customCodeBodyRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [authEnabled, setAuthEnabled] = useState(false);
+  const [authType, setAuthType] = useState<'password' | 'login'>('password');
   const [authPassword, setAuthPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -212,6 +213,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
     customCodeHead: string;
     customCodeBody: string;
     authEnabled: boolean;
+    authType: 'password' | 'login';
     authPassword: string;
     collectionId: string | null;
     slugFieldId: string | null;
@@ -462,6 +464,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
           initialValuesRef.current.customCodeHead = settings?.custom_code?.head || '';
           initialValuesRef.current.customCodeBody = settings?.custom_code?.body || '';
           initialValuesRef.current.authEnabled = settings?.auth?.enabled || false;
+          initialValuesRef.current.authType = settings?.auth?.type || 'password';
           initialValuesRef.current.authPassword = settings?.auth?.password || '';
           initialValuesRef.current.collectionId = settings?.cms?.collection_id || null;
           initialValuesRef.current.slugFieldId = settings?.cms?.slug_field_id || null;
@@ -493,7 +496,8 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
       customCodeHead !== initialValuesRef.current.customCodeHead ||
       customCodeBody !== initialValuesRef.current.customCodeBody ||
       authEnabled !== initialValuesRef.current.authEnabled ||
-      authPassword !== initialValuesRef.current.authPassword ||
+      authType !== initialValuesRef.current.authType ||
+      (authType === 'password' && authPassword !== initialValuesRef.current.authPassword) ||
       collectionId !== initialValuesRef.current.collectionId ||
       slugFieldId !== initialValuesRef.current.slugFieldId ||
       nextPrevSortBy !== initialValuesRef.current.nextPrevSortBy ||
@@ -536,6 +540,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
       const initialCustomCodeHead = settings?.custom_code?.head || '';
       const initialCustomCodeBody = settings?.custom_code?.body || '';
       const initialAuthEnabled = settings?.auth?.enabled || false;
+      const initialAuthType = settings?.auth?.type || 'password';
       const initialAuthPassword = settings?.auth?.password || '';
       const initialCollectionId = settings?.cms?.collection_id || null;
       const initialSlugFieldId = settings?.cms?.slug_field_id || null;
@@ -557,6 +562,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
         customCodeHead: initialCustomCodeHead,
         customCodeBody: initialCustomCodeBody,
         authEnabled: initialAuthEnabled,
+        authType: initialAuthType,
         authPassword: initialAuthPassword,
         collectionId: initialCollectionId,
         slugFieldId: initialSlugFieldId,
@@ -575,6 +581,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
       setCustomCodeHead(initialCustomCodeHead);
       setCustomCodeBody(initialCustomCodeBody);
       setAuthEnabled(initialAuthEnabled);
+      setAuthType(initialAuthType);
       setAuthPassword(initialAuthPassword);
       setCollectionId(initialCollectionId);
       setSlugFieldId(initialSlugFieldId);
@@ -594,6 +601,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
         customCodeHead: '',
         customCodeBody: '',
         authEnabled: false,
+        authType: 'password',
         authPassword: '',
         collectionId: null,
         slugFieldId: null,
@@ -612,6 +620,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
       setCustomCodeHead('');
       setCustomCodeBody('');
       setAuthEnabled(false);
+      setAuthType('password');
       setAuthPassword('');
       setCollectionId(null);
       setSlugFieldId(null);
@@ -866,6 +875,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
         setCustomCodeHead(initialValuesRef.current.customCodeHead);
         setCustomCodeBody(initialValuesRef.current.customCodeBody);
         setAuthEnabled(initialValuesRef.current.authEnabled);
+        setAuthType(initialValuesRef.current.authType);
         setAuthPassword(initialValuesRef.current.authPassword);
         setCollectionId(initialValuesRef.current.collectionId);
         setSlugFieldId(initialValuesRef.current.slugFieldId);
@@ -895,6 +905,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
         setCustomCodeHead(initialValuesRef.current.customCodeHead);
         setCustomCodeBody(initialValuesRef.current.customCodeBody);
         setAuthEnabled(initialValuesRef.current.authEnabled);
+        setAuthType(initialValuesRef.current.authType);
         setAuthPassword(initialValuesRef.current.authPassword);
         setCollectionId(initialValuesRef.current.collectionId);
         setSlugFieldId(initialValuesRef.current.slugFieldId);
@@ -1045,7 +1056,8 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
         ...existingSettings,
         auth: {
           enabled: authEnabled,
-          password: authPassword.trim(),
+          type: authType,
+          password: authType === 'password' ? authPassword.trim() : '',
         },
         seo: {
           title: seoTitle.trim(),
@@ -1098,6 +1110,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
       setSeoImage(normalizedSeoImage);
       setCustomCodeHead(trimmedCustomCodeHead);
       setCustomCodeBody(trimmedCustomCodeBody);
+      setAuthType(authType);
       setAuthPassword(trimmedAuthPassword);
       // Update collection values - normalize to null if either is missing
       const savedCollectionId = collectionId && slugFieldId ? collectionId : null;
@@ -1122,6 +1135,7 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
         customCodeHead: trimmedCustomCodeHead,
         customCodeBody: trimmedCustomCodeBody,
         authEnabled,
+        authType,
         authPassword: trimmedAuthPassword,
         collectionId: savedCollectionId,
         slugFieldId: savedSlugFieldId,
@@ -1508,15 +1522,15 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
 
                     <Field orientation="horizontal" className="flex flex-row-reverse!">
                       <FieldContent>
-                        <FieldLabel htmlFor="passwordProtected">
-                          Password protected
+                        <FieldLabel htmlFor="pageProtected">
+                          Page protection
                         </FieldLabel>
                         <FieldDescription>
-                          Restrict access to this page. Setting a password will override any password set on a parent folder. Passwords are case-sensitive.
+                          Restrict access to this page. This will override any protection set on a parent folder.
                         </FieldDescription>
                       </FieldContent>
                       <Checkbox
-                        id="passwordProtected"
+                        id="pageProtected"
                         checked={authEnabled}
                         onCheckedChange={(checked) => setAuthEnabled(checked === true)}
                         disabled={isErrorPage}
@@ -1524,26 +1538,46 @@ const PageSettingsPanel = React.forwardRef<PageSettingsPanelHandle, PageSettings
                     </Field>
 
                     {authEnabled && (
-                      <Field>
-                        <FieldLabel>Password</FieldLabel>
-                        <div className="flex gap-1.5">
-                          <Input
-                            type={showPassword ? 'text' : 'password'}
-                            value={authPassword}
-                            onChange={(e) => setAuthPassword(e.target.value)}
-                            placeholder="Enter password"
-                          />
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className="w-18"
-                            onClick={() => setShowPassword(!showPassword)}
+                      <>
+                        <Field>
+                          <FieldLabel>Protection type</FieldLabel>
+                          <Select
+                            value={authType}
+                            onValueChange={(val: any) => setAuthType(val)}
                           >
-                            {showPassword ? 'Hide' : 'Show'}
-                          </Button>
-                        </div>
-                      </Field>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="password">Password</SelectItem>
+                              <SelectItem value="login">User Login</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </Field>
+
+                        {authType === 'password' && (
+                          <Field>
+                            <FieldLabel>Password</FieldLabel>
+                            <div className="flex gap-1.5">
+                              <Input
+                                type={showPassword ? 'text' : 'password'}
+                                value={authPassword}
+                                onChange={(e) => setAuthPassword(e.target.value)}
+                                placeholder="Enter password"
+                              />
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="w-18"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                {showPassword ? 'Hide' : 'Show'}
+                              </Button>
+                            </div>
+                          </Field>
+                        )}
+                      </>
                     )}
 
                     <Field orientation="horizontal" className="flex flex-row-reverse!">

@@ -110,46 +110,82 @@ export function buildAuthCookieValue(payload: PageAuthCookie): string {
 /**
  * Protection result from checking a page/folder
  */
-export interface PasswordProtectionResult {
-  /** Whether the page is password protected */
+export interface PageProtectionResult {
+  /** Whether the page is protected */
   isProtected: boolean;
-  /** The password required (only set if protected) */
+  /** The type of protection */
+  type?: 'password' | 'login';
+  /** The password required (only set if protected by password) */
   password?: string;
   /** Whether protection comes from page or folder */
   protectedBy?: 'page' | 'folder';
-  /** The ID of the page or folder that has the password */
+  /** The ID of the page or folder that has the protection */
   protectedById?: string;
   /** Whether the current session has unlocked this protection */
   isUnlocked: boolean;
 }
 
 /**
- * Get the effective password protection for a page
+ * Get the effective protection for a page
  * 
  * Priority:
- * 1. Page's own password (if enabled)
- * 2. Parent folder's password (traverse up, closest folder wins)
+ * 1. Page's own protection (if enabled)
+ * 2. Parent folder's protection (traverse up, closest folder wins)
  * 
  * @param page - The page to check
  * @param folders - All folders for hierarchy lookup
- * @param authCookie - Current auth cookie payload (null if not set)
+ * @param authCookie - Current auth cookie payload (null if dry-run for static rendering)
  */
-export function getPasswordProtection(
+export async function getPageProtection(
   page: Page,
   folders: PageFolder[],
   authCookie: PageAuthCookie | null
-): PasswordProtectionResult {
-  // Check if page itself has password protection
-  if (page.settings?.auth?.enabled && page.settings.auth.password) {
-    const isUnlocked = authCookie?.pages?.includes(page.id) ?? false;
-    return {
-      isProtected: true,
-      password: page.settings.auth.password,
-      protectedBy: 'page',
-      protectedById: page.id,
-      isUnlocked,
-    };
-  }
+): Promise<PageProtectionResult> {
+  const isDryRun = authCookie === null;
+
+  const checkProtection = async (
+    settings: any,
+    id: string,
+    type: 'page' | 'folder'
+  ): Promise<PageProtectionResult | null> => {
+    if (settings?.auth?.enabled) {
+      if (settings.auth.type === 'login') {
+        let isUnlocked = false;
+        if (!isDryRun) {
+          const { getAuthUser } = await import('@/lib/supabase-auth');
+          const authUser = await getAuthUser();
+          isUnlocked = !!authUser;
+        }
+        return {
+          isProtected: true,
+          type: 'login',
+          protectedBy: type,
+          protectedById: id,
+          isUnlocked,
+        };
+      } else {
+        let isUnlocked = false;
+        if (!isDryRun && authCookie) {
+          isUnlocked = type === 'page' 
+            ? (authCookie.pages?.includes(id) ?? false)
+            : (authCookie.folders?.includes(id) ?? false);
+        }
+        return {
+          isProtected: true,
+          type: 'password',
+          password: settings.auth.password,
+          protectedBy: type,
+          protectedById: id,
+          isUnlocked,
+        };
+      }
+    }
+    return null;
+  };
+
+  // Check if page itself has protection
+  const pageResult = await checkProtection(page.settings, page.id, 'page');
+  if (pageResult) return pageResult;
 
   // Traverse folder hierarchy from page's parent folder up to root
   let currentFolderId = page.page_folder_id;
@@ -158,16 +194,8 @@ export function getPasswordProtection(
     const folder = folders.find(f => f.id === currentFolderId);
     if (!folder) break;
 
-    if (folder.settings?.auth?.enabled && folder.settings.auth.password) {
-      const isUnlocked = authCookie?.folders?.includes(folder.id) ?? false;
-      return {
-        isProtected: true,
-        password: folder.settings.auth.password,
-        protectedBy: 'folder',
-        protectedById: folder.id,
-        isUnlocked,
-      };
-    }
+    const folderResult = await checkProtection(folder.settings, folder.id, 'folder');
+    if (folderResult) return folderResult;
 
     // Move to parent folder
     currentFolderId = folder.page_folder_id;

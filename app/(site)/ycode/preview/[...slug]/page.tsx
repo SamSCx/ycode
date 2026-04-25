@@ -7,7 +7,7 @@ import { getSettingsByKeys } from '@/lib/repositories/settingsRepository';
 import { generateColorVariablesCss } from '@/lib/repositories/colorVariableRepository';
 
 import { generatePageMetadata } from '@/lib/generate-page-metadata';
-import { parseAuthCookie, getPasswordProtection, fetchFoldersForAuth } from '@/lib/page-auth';
+import { parseAuthCookie, getPageProtection, fetchFoldersForAuth } from '@/lib/page-auth';
 
 async function fetchPreviewDraftCss() {
   const settings = await getSettingsByKeys(['draft_css']);
@@ -62,7 +62,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   // Check password protection for this page (using all folders for preview)
   const folders = await fetchFoldersForAuth(false);
   const authCookie = await parseAuthCookie();
-  const protection = getPasswordProtection(page, folders, authCookie);
+  const protection = await getPageProtection(page, folders, authCookie);
 
   // If page is protected and not unlocked, show 401 error page
   if (protection.isProtected && !protection.isUnlocked) {
@@ -94,14 +94,20 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center max-w-md px-4">
           <h1 className="text-6xl font-bold text-gray-900 mb-4">401</h1>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Password Protected</h2>
-          <p className="text-gray-600 mb-8">Enter the password to continue.</p>
-          <PasswordForm
-            pageId={protection.protectedBy === 'page' ? protection.protectedById : undefined}
-            folderId={protection.protectedBy === 'folder' ? protection.protectedById : undefined}
-            redirectUrl={`/ycode/preview/${slugPath}`}
-            isPublished={false}
-          />
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            {protection.type === 'login' ? 'Login Required' : 'Password Protected'}
+          </h2>
+          <p className="text-gray-600 mb-8">
+            {protection.type === 'login' ? 'Please log in to view this page.' : 'Enter the password to continue.'}
+          </p>
+          {protection.type !== 'login' && (
+            <PasswordForm
+              pageId={protection.protectedBy === 'page' ? protection.protectedById : undefined}
+              folderId={protection.protectedBy === 'folder' ? protection.protectedById : undefined}
+              redirectUrl={`/ycode/preview/${slugPath}`}
+              isPublished={false}
+            />
+          )}
         </div>
       </div>
     );
@@ -146,7 +152,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // Check password protection - don't leak metadata for protected pages
   const folders = await fetchFoldersForAuth(false);
   const authCookie = await parseAuthCookie();
-  const protection = getPasswordProtection(data.page, folders, authCookie);
+  const protection = await getPageProtection(data.page, folders, authCookie);
 
   if (protection.isProtected && !protection.isUnlocked) {
     return {

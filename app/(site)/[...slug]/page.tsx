@@ -8,7 +8,7 @@ import { fetchPageByPath, fetchErrorPage } from '@/lib/page-fetcher';
 import PageRenderer from '@/components/PageRenderer';
 import PasswordForm from '@/components/PasswordForm';
 import { getSettingByKey } from '@/lib/repositories/settingsRepository';
-import { parseAuthCookie, getPasswordProtection, fetchFoldersForAuth } from '@/lib/page-auth';
+import { parseAuthCookie, getPageProtection, fetchFoldersForAuth } from '@/lib/page-auth';
 import { getSiteBaseUrl } from '@/lib/url-utils';
 import type { Page, PageFolder, Translation, Redirect as RedirectType } from '@/types';
 
@@ -288,12 +288,12 @@ export default async function Page({ params }: PageProps) {
   // Check password protection for this page.
   // First evaluate without cookies() so non-protected pages stay cacheable.
   const folders = await fetchCachedFoldersForAuth();
-  const protectionCheck = getPasswordProtection(page, folders, null);
+  const protectionCheck = await getPageProtection(page, folders, null);
 
   // If page is protected, read auth cookie and re-check unlock state.
   if (protectionCheck.isProtected) {
     const authCookie = await parseAuthCookie();
-    const protection = getPasswordProtection(page, folders, authCookie);
+    const protection = await getPageProtection(page, folders, authCookie);
 
     // If page is protected and not unlocked, show 401 error page
     if (!protection.isUnlocked) {
@@ -325,14 +325,20 @@ export default async function Page({ params }: PageProps) {
         <div className="min-h-screen flex items-center justify-center bg-white">
           <div className="text-center max-w-md px-4">
             <h1 className="text-6xl font-bold text-gray-900 mb-4">401</h1>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Password Protected</h2>
-            <p className="text-gray-600 mb-8">Enter the password to continue.</p>
-            <PasswordForm
-              pageId={protection.protectedBy === 'page' ? protection.protectedById : undefined}
-              folderId={protection.protectedBy === 'folder' ? protection.protectedById : undefined}
-              redirectUrl={currentPath}
-              isPublished={true}
-            />
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              {protection.type === 'login' ? 'Login Required' : 'Password Protected'}
+            </h2>
+            <p className="text-gray-600 mb-8">
+              {protection.type === 'login' ? 'Please log in to view this page.' : 'Enter the password to continue.'}
+            </p>
+            {protection.type !== 'login' && (
+              <PasswordForm
+                pageId={protection.protectedBy === 'page' ? protection.protectedById : undefined}
+                folderId={protection.protectedBy === 'folder' ? protection.protectedById : undefined}
+                redirectUrl={currentPath}
+                isPublished={true}
+              />
+            )}
           </div>
         </div>
       );
@@ -383,11 +389,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // Check password protection - don't leak metadata for protected pages.
   // First check without cookies() to avoid forcing dynamic metadata for public pages.
   const folders = await fetchCachedFoldersForAuth();
-  const protectionCheck = getPasswordProtection(data.page, folders, null);
+  const protectionCheck = await getPageProtection(data.page, folders, null);
 
   if (protectionCheck.isProtected) {
     const authCookie = await parseAuthCookie();
-    const protection = getPasswordProtection(data.page, folders, authCookie);
+    const protection = await getPageProtection(data.page, folders, authCookie);
     if (!protection.isUnlocked) {
       return {
         title: 'Password Protected',
