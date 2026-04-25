@@ -21,14 +21,12 @@ export async function up(knex: Knex): Promise<void> {
   // making it easier to reference in code or triggers if needed.
   // Wait, the CMS handles it via UUID, let's just generate a specific one.
   const collectionId = 'c011ec71-0000-4000-8000-000000000001';
-  const collectionUuid = 'c011ec71-0000-4000-8000-000000000002';
 
   // 2. Insert User Profiles collection (Draft & Published)
   await knex('collections').insert([
     {
       id: collectionId,
       name: 'User Profiles',
-      uuid: collectionUuid,
       order: -1, // Push to top or special position
       is_published: false,
       is_system: true,
@@ -36,7 +34,6 @@ export async function up(knex: Knex): Promise<void> {
     {
       id: collectionId,
       name: 'User Profiles',
-      uuid: collectionUuid,
       order: -1,
       is_published: true,
       is_system: true,
