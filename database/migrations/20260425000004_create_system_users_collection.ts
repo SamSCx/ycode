@@ -1,5 +1,4 @@
 import { Knex } from 'knex';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Migration: Create System "User Profiles" Collection
