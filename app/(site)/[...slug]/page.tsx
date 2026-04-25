@@ -216,7 +216,7 @@ async function fetchCachedFoldersForAuth() {
   }
 }
 
-async function fetchCachedErrorPage(errorCode: 401 | 404) {
+async function fetchCachedErrorPage(errorCode: 401 | 403 | 404) {
   try {
     return await unstable_cache(
       async () => fetchErrorPage(errorCode, true),
@@ -295,9 +295,15 @@ export default async function Page({ params }: PageProps) {
     const authCookie = await parseAuthCookie();
     const protection = await getPageProtection(page, folders, authCookie);
 
-    // If page is protected and not unlocked, show 401 error page
+    // If page is protected and not unlocked, show 401/403 error page
     if (!protection.isUnlocked) {
-      const errorPageData = await fetchCachedErrorPage(401);
+      const errorCode = protection.type === 'login' ? 403 : 401;
+      let errorPageData = await fetchCachedErrorPage(errorCode);
+
+      // Fallback to 401 if specific 403 page doesn't exist
+      if (!errorPageData && errorCode === 403) {
+        errorPageData = await fetchCachedErrorPage(401);
+      }
 
       if (errorPageData) {
         const { page: errorPage, pageLayers: errorPageLayers, components: errorComponents } = errorPageData;
@@ -315,6 +321,7 @@ export default async function Page({ params }: PageProps) {
               folderId: protection.protectedBy === 'folder' ? protection.protectedById : undefined,
               redirectUrl: currentPath,
               isPublished: true,
+              type: protection.type,
             }}
           />
         );

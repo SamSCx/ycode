@@ -96,12 +96,13 @@ function hasLightboxLayers(layers: Layer[]): boolean {
   return false;
 }
 
-/** Password protection context for 401 error pages */
+/** Password protection context for 401/403 error pages */
 export type PasswordProtectionContext = {
   pageId?: string;
   folderId?: string;
   redirectUrl: string;
   isPublished: boolean;
+  type?: 'password' | 'login';
 };
 
 interface PageRendererProps {
@@ -176,8 +177,8 @@ export default async function PageRenderer({
   ycodeBadge = true,
   passwordProtection,
 }: PageRendererProps) {
-  // Check if this is a 401 error page that needs password form
-  const is401Page = page.error_page === 401;
+  // Check if this is an error page that needs protection UI
+  const isProtectedErrorPage = page.error_page === 401 || page.error_page === 403;
   // Layers are always pre-resolved by the caller (page-fetcher).
   // Components are passed through for rich-text embedded component rendering in LayerRenderer.
   const resolvedLayers = layers || [];
@@ -466,8 +467,8 @@ export default async function PageRenderer({
           serverSettings={serverSettings}
         />
 
-        {/* Inject password form for 401 error pages */}
-        {is401Page && passwordProtection && (
+        {/* Inject password form for password-protected pages (when using the 401 error page) */}
+        {isProtectedErrorPage && passwordProtection?.type === 'password' && (
           <PasswordForm
             pageId={passwordProtection.pageId}
             folderId={passwordProtection.folderId}

@@ -826,8 +826,8 @@ const TRANSLITERATION_MAP: Record<string, string> = {
   'ι': 'i', 'κ': 'k', 'λ': 'l', 'μ': 'm', 'ν': 'n', 'ξ': 'x', 'ο': 'o', 'π': 'p',
   'ρ': 'r', 'σ': 's', 'ς': 's', 'τ': 't', 'υ': 'y', 'φ': 'f', 'χ': 'ch', 'ψ': 'ps', 'ω': 'o',
   'Α': 'A', 'Β': 'B', 'Γ': 'G', 'Δ': 'D', 'Ε': 'E', 'Ζ': 'Z', 'Η': 'I', 'Θ': 'Th',
-  'Ι': 'I', 'Κ': 'K', 'Λ': 'L', 'Μ': 'M', 'Ν': 'N', 'Ξ': 'X', 'Ο': 'O', 'Π': 'P',
-  'Ρ': 'R', 'Σ': 'S', 'Τ': 'T', 'Υ': 'Y', 'Φ': 'F', 'Χ': 'Ch', 'Ψ': 'Ps', 'Ω': 'O',
+  'Ι': 'I', 'Κ': 'K', 'Λ': 'L', 'М': 'M', 'Н': 'N', 'О': 'O', 'П': 'P',
+  'Р': 'R', 'Σ': 'S', 'Т': 'T', 'Υ': 'Y', 'Φ': 'F', 'Χ': 'Ch', 'Ψ': 'Ps', 'Ω': 'O',
 
   // Scandinavian
   'å': 'a', 'æ': 'ae', 'ø': 'o',
@@ -1430,28 +1430,6 @@ export const DEFAULT_ERROR_PAGES: ErrorPageConfig[] = [
                         },
                       },
                       {
-                        id: 'layer-1762789197005-7z2wy597y',
-                        name: 'text',
-                        settings: {
-                          tag: 'p',
-                        },
-                        design: {
-                          typography: { fontSize: '12', color: '#111827', isActive: true },
-                        },
-                        classes: 'text-[12px] text-[#111827]',
-                        children: [],
-                        customName: 'Text',
-                        restrictions: { editText: true },
-                        variables: {
-                          text: {
-                            type: 'dynamic_rich_text',
-                            data: {
-                              content: getTiptapTextContent('Password protected')
-                            }
-                          }
-                        },
-                      },
-                      {
                         id: 'layer-1762789197006-7z2wy597z',
                         name: 'text',
                         settings: {
@@ -1473,6 +1451,126 @@ export const DEFAULT_ERROR_PAGES: ErrorPageConfig[] = [
                           }
                         },
                       },
+                    ],
+                    customName: 'Container',
+                  },
+                ],
+                customName: 'Container',
+              },
+            ],
+            customName: 'Section',
+          },
+        ],
+      },
+    ]),
+  },
+  {
+    code: 403,
+    name: '403 - Login required',
+    settings: {
+      seo: {
+        title: 'Error 403 - Login required',
+        description: 'Please log in to view this page.',
+        image: null,
+        noindex: true,
+      },
+    },
+    layers: JSON.stringify([
+      {
+        id: 'body',
+        name: 'body',
+        classes: '',
+        children: [
+          {
+            id: 'layer-403-section',
+            name: 'section',
+            design: {
+              layout: { display: 'Flex', isActive: true, flexDirection: 'column' },
+              sizing: { height: '100vh', isActive: true },
+              spacing: { isActive: true, paddingTop: '3rem', paddingBottom: '3rem' },
+            },
+            classes: 'flex flex-col gap-[1rem] py-[3rem] h-[100vh]',
+            children: [
+              {
+                id: 'layer-403-container',
+                name: 'div',
+                design: {
+                  sizing: { height: '100vh', isActive: true, maxWidth: '80rem' },
+                  spacing: { isActive: true, marginLeft: 'auto', marginRight: 'auto', paddingLeft: '1rem', paddingRight: '1rem' },
+                },
+                classes: 'max-w-[80rem] mx-auto px-[1rem] h-[100vh]',
+                children: [
+                  {
+                    id: 'layer-403-content',
+                    name: 'div',
+                    design: {
+                      layout: { gap: '6', display: 'flex', isActive: true, alignItems: 'center', flexDirection: 'column', justifyContent: 'center' },
+                      sizing: { height: '100%', isActive: true },
+                      typography: { isActive: true, textAlign: 'center' },
+                    },
+                    classes: 'items-center text-center h-full flex flex-col justify-center gap-[6px]',
+                    children: [
+                      {
+                        id: 'layer-403-heading',
+                        name: 'heading',
+                        settings: {
+                          tag: 'h1',
+                        },
+                        design: {
+                          typography: { color: '#111827', fontSize: '30', isActive: true, fontWeight: '700' },
+                        },
+                        classes: 'font-[700] text-[#111827] text-[30px]',
+                        children: [],
+                        customName: 'Heading',
+                        restrictions: { editText: true },
+                        variables: {
+                          text: {
+                            type: 'dynamic_rich_text',
+                            data: {
+                              content: getTiptapTextContent('Login required')
+                            }
+                          }
+                        },
+                      },
+                      {
+                        id: 'layer-403-text',
+                        name: 'text',
+                        settings: {
+                          tag: 'p',
+                        },
+                        design: {
+                          typography: { fontSize: '12', color: '#6B7280', isActive: true },
+                        },
+                        classes: 'text-[12px] text-[#6B7280]',
+                        children: [],
+                        customName: 'Text',
+                        restrictions: { editText: true },
+                        variables: {
+                          text: {
+                            type: 'dynamic_rich_text',
+                            data: {
+                              content: getTiptapTextContent('Please log in to access this page.')
+                            }
+                          }
+                        },
+                      },
+                      {
+                        id: 'layer-403-login-form',
+                        name: 'authLogin',
+                        settings: {
+                          auth: {
+                            showGoogle: true,
+                            showGithub: true
+                          }
+                        },
+                        design: {
+                          sizing: { width: '100%', isActive: true, maxWidth: '24rem' },
+                          spacing: { isActive: true, marginTop: '2rem' },
+                        },
+                        classes: 'w-full max-w-[24rem] mt-[2rem]',
+                        children: [],
+                        customName: 'Login Form',
+                      }
                     ],
                     customName: 'Container',
                   },
@@ -1555,28 +1653,6 @@ export const DEFAULT_ERROR_PAGES: ErrorPageConfig[] = [
                         },
                       },
                       {
-                        id: 'layer-1762789197005-7z2wy597y',
-                        name: 'text',
-                        settings: {
-                          tag: 'p',
-                        },
-                        design: {
-                          typography: { fontSize: '12', color: '#111827', isActive: true },
-                        },
-                        classes: 'text-[12px] text-[#111827]',
-                        children: [],
-                        customName: 'Text',
-                        restrictions: { editText: true },
-                        variables: {
-                          text: {
-                            type: 'dynamic_rich_text',
-                            data: {
-                              content: getTiptapTextContent('Page not found')
-                            }
-                          }
-                        },
-                      },
-                      {
                         id: 'layer-1762789197006-7z2wy597z',
                         name: 'text',
                         settings: {
@@ -1593,7 +1669,7 @@ export const DEFAULT_ERROR_PAGES: ErrorPageConfig[] = [
                           text: {
                             type: 'dynamic_rich_text',
                             data: {
-                              content: getTiptapTextContent('The page you are looking for does not exist.')
+                              content: getTiptapTextContent('The page you are looking for could not be found.')
                             }
                           }
                         },
@@ -1675,28 +1751,6 @@ export const DEFAULT_ERROR_PAGES: ErrorPageConfig[] = [
                             type: 'dynamic_rich_text',
                             data: {
                               content: getTiptapTextContent('500')
-                            }
-                          }
-                        },
-                      },
-                      {
-                        id: 'layer-1762789197005-7z2wy597y',
-                        name: 'text',
-                        settings: {
-                          tag: 'p',
-                        },
-                        design: {
-                          typography: { fontSize: '12', color: '#111827', isActive: true },
-                        },
-                        classes: 'text-[12px] text-[#111827]',
-                        children: [],
-                        customName: 'Text',
-                        restrictions: { editText: true },
-                        variables: {
-                          text: {
-                            type: 'dynamic_rich_text',
-                            data: {
-                              content: getTiptapTextContent('Server error')
                             }
                           }
                         },
