@@ -13,7 +13,13 @@ export const authTemplates: Record<string, BlockTemplate> = {
       classes: ['w-full', 'max-w-md', 'mx-auto'],
       settings: {
         auth: {
-          redirectUrl: '/',
+          redirectUrl: {
+            type: 'url',
+            url: {
+              type: 'dynamic_text',
+              data: { content: '/' }
+            }
+          },
           showGoogle: true,
           showGithub: false,
         }
@@ -28,7 +34,13 @@ export const authTemplates: Record<string, BlockTemplate> = {
       classes: ['w-full', 'max-w-md', 'mx-auto'],
       settings: {
         auth: {
-          redirectUrl: '/',
+          redirectUrl: {
+            type: 'url',
+            url: {
+              type: 'dynamic_text',
+              data: { content: '/' }
+            }
+          },
           showGoogle: true,
           showGithub: false,
         }
