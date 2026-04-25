@@ -2926,9 +2926,27 @@ const LayerItem: React.FC<{
                        layer.name === 'authRegister' ? AuthRegister :
                        AuthForgotPassword;
 
+      const authSettings = layer.settings?.auth || {};
+      const resolvedRedirectUrl = authSettings.redirectUrl 
+        ? generateLinkHref(authSettings.redirectUrl, {
+            pages,
+            folders,
+            collectionItemSlugs,
+            isPreview,
+            locale: currentLocale,
+            translations,
+            getAsset,
+            anchorMap,
+            resolvedAssets,
+          }) || undefined
+        : undefined;
+
       return (
         <Tag {...elementProps} style={mergedStyle}>
-          <AuthComp {...(layer.settings?.auth || {})} />
+          <AuthComp 
+            {...authSettings} 
+            redirectUrl={resolvedRedirectUrl} 
+          />
         </Tag>
       );
     }

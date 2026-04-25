@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import SettingsPanel from './SettingsPanel';
 import LinkSettings from './LinkSettings';
-import type { Layer, LinkSettingsValue } from '@/types';
+import type { Layer, LinkSettingsValue, LayerAuthSettings } from '@/types';
 
 interface AuthSettingsProps {
   layer: Layer | null;
@@ -39,7 +39,7 @@ export default function AuthSettings({ layer, onLayerUpdate }: AuthSettingsProps
   );
 
   const handleToggle = useCallback(
-    (key: string, value: boolean) => {
+    (key: keyof LayerAuthSettings, value: boolean) => {
       if (!layer) return;
 
       onLayerUpdate(layer.id, {
@@ -102,6 +102,21 @@ export default function AuthSettings({ layer, onLayerUpdate }: AuthSettingsProps
                 onCheckedChange={(checked) => handleToggle('showGithub', !!checked)}
               />
               <label htmlFor="show-github" className="text-xs cursor-pointer">Show GitHub</label>
+            </div>
+          </div>
+        )}
+
+        {/* Register specific settings */}
+        {layer.name === 'authRegister' && (
+          <div className="flex flex-col gap-3">
+            <Label variant="muted">Registration Fields</Label>
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="show-name" 
+                checked={authSettings.showNameField !== false} 
+                onCheckedChange={(checked) => handleToggle('showNameField', !!checked)}
+              />
+              <label htmlFor="show-name" className="text-xs cursor-pointer">Show name field</label>
             </div>
           </div>
         )}

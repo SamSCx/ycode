@@ -202,6 +202,13 @@ export interface SliderSettings {
   duration: string; // Transition duration in seconds
 }
 
+export interface LayerAuthSettings {
+  redirectUrl?: LinkSettingsValue;
+  showGoogle?: boolean;
+  showGithub?: boolean;
+  showNameField?: boolean;
+}
+
 export interface LayerSettings {
   id?: string; // Custom element ID
   tag?: string; // HTML tag override (e.g., 'h1', 'h2', etc.)
@@ -216,6 +223,7 @@ export interface LayerSettings {
   slider?: SliderSettings; // Slider-specific settings (only for slider layers)
   lightbox?: LightboxSettings; // Lightbox-specific settings (only for lightbox layers)
   form?: FormSettings; // Form-specific settings (only for form layers)
+  auth?: LayerAuthSettings; // Auth-specific settings (login, register, etc.)
   filterOnChange?: boolean; // For filter layers: trigger filtering on every input change (debounced)
   optionsSource?: {
     collectionId: string;
