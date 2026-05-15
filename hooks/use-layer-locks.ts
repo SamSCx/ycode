@@ -30,7 +30,12 @@ export function useLayerLocks(): UseLayerLocksReturn {
   const updateUser = useCollaborationPresenceStore((state) => state.updateUser);
   const { currentPageId, editingComponentId } = useEditorStore();
   
-  const lastActivity = useRef<number>(Date.now());
+  const lastActivity = useRef<number>(0);
+  
+  // Set initial activity timestamp
+  useEffect(() => {
+    lastActivity.current = Date.now();
+  }, []);
   
   // Determine the channel name based on whether we're editing a component or a page
   const channelName = editingComponentId 
