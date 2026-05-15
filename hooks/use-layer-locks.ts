@@ -6,8 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { useCollaborationPresenceStore, getResourceLockKey } from '@/stores/useCollaborationPresenceStore';
-import { useAuthStore } from '@/stores/useAuthStore';
+import { useCollaborationPresenceStore } from '@/stores/useCollaborationPresenceStore';
 import { useEditorStore } from '@/stores/useEditorStore';
 import { useResourceLock } from './use-resource-lock';
 
@@ -25,10 +24,10 @@ interface UseLayerLocksReturn {
 }
 
 export function useLayerLocks(): UseLayerLocksReturn {
-  const { user } = useAuthStore();
   const currentUserId = useCollaborationPresenceStore((state) => state.currentUserId);
   const updateUser = useCollaborationPresenceStore((state) => state.updateUser);
-  const { currentPageId, editingComponentId } = useEditorStore();
+  const currentPageId = useEditorStore((state) => state.currentPageId);
+  const editingComponentId = useEditorStore((state) => state.editingComponentId);
   
   const lastActivity = useRef<number>(0);
   
