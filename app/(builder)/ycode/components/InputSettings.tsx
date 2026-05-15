@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/select';
 import SettingsPanel from './SettingsPanel';
 import type { Layer } from '@/types';
+import { useCollectionsStore } from '@/stores/useCollectionsStore';
+import { USERS_COLLECTION_ID } from '@/lib/auth-constants';
 
 interface InputSettingsProps {
   layer: Layer | null;
@@ -43,6 +45,7 @@ const INPUT_TYPES = [
 
 export default function InputSettings({ layer, onLayerUpdate }: InputSettingsProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const { fields } = useCollectionsStore();
 
   // Check if this is a form input element
   const isInputLayer = layer?.name === 'input';
@@ -53,7 +56,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
   // Check if this is a checkbox or radio input
   const isCheckboxInput = isInputLayer && layer?.attributes?.type === 'checkbox';
   const isRadioInput = isInputLayer && layer?.attributes?.type === 'radio';
-  const isCheckboxOrRadio = isCheckboxInput || isRadioInput;
 
   // Get current attribute values
   const attributes = layer?.attributes || {};
@@ -63,13 +65,21 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
   const name = attributes.name || '';
   const isRequired = attributes.required === true || attributes.required === 'true';
   const isAutofocus = attributes.autoFocus === true || attributes.autoFocus === 'true';
+  const cmsFieldId = attributes.cms_field_id || '';
+
+  // Get User collection fields for mapping
+  const userFields = fields[USERS_COLLECTION_ID] || [];
+  // Exclude system fields, hidden fields
+  const mappableFields = userFields.filter(f => 
+    !['email', 'password', 'supabase_user_id', 'role'].includes(f.key || '') && 
+    !f.hidden
+  );
 
   const handleAttributeChange = useCallback(
     (key: string, newValue: any) => {
       if (!layer) return;
 
       // Handle boolean attributes (required, autoFocus)
-      // If false/unchecked, remove the attribute entirely
       if (key === 'required' || key === 'autoFocus') {
         const newAttributes = { ...layer.attributes };
         if (newValue) {
@@ -104,6 +114,37 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
     return null;
   }
 
+  const renderCmsMapping = () => {
+    if (mappableFields.length === 0) return null;
+    
+    return (
+      <div className="grid grid-cols-3 pt-2 border-t border-dashed mt-2">
+        <Label variant="muted">CMS Field</Label>
+        <div className="col-span-2 *:w-full">
+          <Select
+            value={cmsFieldId || 'none'}
+            onValueChange={(val) => handleAttributeChange('cms_field_id', val === 'none' ? '' : val)}
+          >
+            <SelectTrigger className="h-8 text-xs bg-primary/5 border-primary/20">
+              <SelectValue placeholder="Map to User field..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Not mapped</SelectItem>
+              {mappableFields.map((field) => (
+                <SelectItem key={field.id} value={field.id}>
+                  {field.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[10px] text-muted-foreground mt-1 px-1">
+            Used to save this input to the User&apos;s profile.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <SettingsPanel
       title="Settings"
@@ -114,7 +155,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
         {/* Radio specific settings */}
         {isRadioInput ? (
           <>
-            {/* Group - radios with the same name work as a group */}
             <div className="grid grid-cols-3">
               <Label variant="muted">Group</Label>
               <div className="col-span-2 *:w-full">
@@ -126,7 +166,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
               </div>
             </div>
 
-            {/* Value - the value submitted when this radio is selected */}
             <div className="grid grid-cols-3">
               <Label variant="muted">Value</Label>
               <div className="col-span-2 *:w-full">
@@ -138,7 +177,8 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
               </div>
             </div>
 
-            {/* Behavior section */}
+            {renderCmsMapping()}
+
             <div className="grid grid-cols-3 items-start">
               <Label variant="muted" className="pt-0.5">Behavior</Label>
               <div className="col-span-2 flex flex-col gap-2">
@@ -160,7 +200,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
           </>
         ) : isCheckboxInput ? (
           <>
-            {/* Name - used as the key in form submission */}
             <div className="grid grid-cols-3">
               <Label variant="muted">Name</Label>
               <div className="col-span-2 *:w-full">
@@ -172,7 +211,8 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
               </div>
             </div>
 
-            {/* Behavior section */}
+            {renderCmsMapping()}
+
             <div className="grid grid-cols-3 items-start">
               <Label variant="muted" className="pt-0.5">Behavior</Label>
               <div className="col-span-2 flex flex-col gap-2">
@@ -194,7 +234,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
           </>
         ) : (
           <>
-            {/* Name - used as the URL parameter key for filters */}
             <div className="grid grid-cols-3">
               <Label variant="muted">Name</Label>
               <div className="col-span-2 *:w-full">
@@ -206,7 +245,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
               </div>
             </div>
 
-            {/* Type selector - only for input elements (not checkbox/radio) */}
             {isInputLayer && (
               <div className="grid grid-cols-3">
                 <Label variant="muted">Type</Label>
@@ -232,7 +270,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
               </div>
             )}
 
-            {/* Placeholder - for input and textarea (select placeholder is in SelectOptionsSettings) */}
             {(isInputLayer || isTextareaLayer) && (
               <div className="grid grid-cols-3">
                 <Label variant="muted">Placeholder</Label>
@@ -246,7 +283,6 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
               </div>
             )}
 
-            {/* Value - default value for the input */}
             {(isInputLayer || isTextareaLayer) && (
               <div className="grid grid-cols-3">
                 <Label variant="muted">Value</Label>
@@ -260,7 +296,8 @@ export default function InputSettings({ layer, onLayerUpdate }: InputSettingsPro
               </div>
             )}
 
-            {/* Behavior section */}
+            {renderCmsMapping()}
+
             <div className="grid grid-cols-3 items-start">
               <Label variant="muted" className="pt-0.5">Behavior</Label>
               <div className="col-span-2 flex flex-col gap-2">

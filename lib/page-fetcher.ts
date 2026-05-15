@@ -2487,7 +2487,8 @@ export async function resolveCollectionLayers(
               g.conditions.some(c => !!c.inputLayerId || !!c.inputLayerId2)
             ) ||
             collectionVariable.sort_by_inputLayerId ||
-            collectionVariable.sort_order_inputLayerId
+            collectionVariable.sort_order_inputLayerId ||
+            collectionVariable.userScope
           );
 
           // Return a fragment layer - LayerRenderer will render children directly without wrapper
@@ -2510,6 +2511,8 @@ export async function resolveCollectionLayers(
               collectionId: collectionVariable.id,
               collectionLayerId: layer.id,
               filters: collectionFilters || { groups: [] },
+              userScope: collectionVariable.userScope,
+              userScopeFieldId: collectionVariable.userScopeFieldId,
               sortBy: collectionVariable.sort_by,
               sortOrder: collectionVariable.sort_order,
               sortByInputLayerId: collectionVariable.sort_by_inputLayerId,

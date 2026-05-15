@@ -98,6 +98,7 @@ export async function getTopItemsPerCollection(
 }
 
 export interface CreateCollectionItemData {
+  id?: string; // UUID
   collection_id: string; // UUID
   manual_order?: number;
   is_published?: boolean;
@@ -782,14 +783,14 @@ export async function createItem(itemData: CreateCollectionItemData): Promise<Co
     throw new Error('Supabase client not configured');
   }
 
-  const id = randomUUID();
+  const id = itemData.id || randomUUID();
   const isPublished = itemData.is_published ?? false;
 
   const { data, error } = await client
     .from('collection_items')
     .insert({
-      id,
       ...itemData,
+      id,
       manual_order: itemData.manual_order ?? 0,
       is_published: isPublished,
       is_publishable: itemData.is_publishable ?? true,

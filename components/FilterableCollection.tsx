@@ -10,6 +10,8 @@ interface FilterableCollectionProps {
   collectionId: string;
   collectionLayerId: string;
   filters: ConditionalVisibility;
+  userScope?: boolean;
+  userScopeFieldId?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   sortByInputLayerId?: string;
@@ -29,6 +31,8 @@ export default function FilterableCollection({
   collectionId,
   collectionLayerId,
   filters,
+  userScope,
+  userScopeFieldId,
   sortBy,
   sortOrder,
   sortByInputLayerId,
@@ -529,6 +533,8 @@ export default function FilterableCollection({
         layerTemplate,
         collectionLayerId,
         filterGroups,
+        userScope,
+        userScopeFieldId,
         sortBy: effectiveSortBy,
         sortOrder: effectiveSortOrder,
         limit,

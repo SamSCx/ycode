@@ -961,9 +961,32 @@ export const colorVariablesApi = {
   },
 };
 
+// Apps API
+export const appsApi = {
+  // Get settings for an app
+  async getSettings(appId: string): Promise<ApiResponse<Record<string, any>>> {
+    return apiRequest<Record<string, any>>(`/ycode/api/apps/${appId}/settings`);
+  },
+
+  // Update settings for an app
+  async updateSettings(appId: string, settings: Record<string, any>): Promise<ApiResponse<Record<string, any>>> {
+    return apiRequest<Record<string, any>>(`/ycode/api/apps/${appId}/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  // Disconnect an app
+  async disconnect(appId: string): Promise<ApiResponse<void>> {
+    return apiRequest<void>(`/ycode/api/apps/${appId}/settings`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 /**
  * Delete an asset (from both storage and database)
- *
+...
  * @param assetId - Asset ID to delete
  * @returns True if successful, false otherwise
  */

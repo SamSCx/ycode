@@ -43,6 +43,9 @@ import PaginatedCollection from '@/components/PaginatedCollection';
 import LoadMoreCollection from '@/components/LoadMoreCollection';
 import FilterableCollection from '@/components/FilterableCollection';
 import LocaleSelector from '@/components/layers/LocaleSelector';
+import AuthForm from '@/components/layers/AuthForm';
+import UserStatus from '@/components/layers/UserStatus';
+import Icon from '@/components/ui/icon';
 import { usePagesStore } from '@/stores/usePagesStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { generateLinkHref, resolveLinkAttrs, isLinkAtCollectionBoundary, type LinkResolutionContext } from '@/lib/link-utils';
@@ -1739,6 +1742,14 @@ const LayerItem: React.FC<{
         })
     );
 
+    // If inside a form and this is an input with a CMS field mapping, override the name attribute
+    if (isInsideForm && (layer.name === 'input' || layer.name === 'textarea' || layer.name === 'select')) {
+      const cmsFieldId = otherAttributes.cms_field_id;
+      if (cmsFieldId) {
+        normalizedAttributes.name = cmsFieldId;
+      }
+    }
+
     // Parse style string to object if needed (for display: contents from collection wrappers)
     const parsedAttrStyle = typeof attrStyle === 'string'
       ? Object.fromEntries(
@@ -2874,191 +2885,267 @@ const LayerItem: React.FC<{
     const childParentComponentLayerId = layer.componentId ? layer.id : parentComponentLayerId;
     const childParentComponentId = layer.componentId || parentComponentId;
 
-    // Collection layers - repeat the element for each item (design applies to each looped item)
-    if (isCollectionLayer && isEditMode) {
-      if (isLoadingLayerData) {
-        if (isSlideChild) return null;
+    // Special handling for auth form (name='auth_form')
+    if (layer.name === 'auth_form') {
+      const authType = layer.settings?.auth?.type || 'login';
+
+      if (isEditMode) {
         return (
-          <Tag {...elementProps}>
-            <div className="w-full p-4">
-              <ShimmerSkeleton
-                count={3}
-                height="60px"
-                gap="1rem"
+          <div {...elementProps} style={mergedStyle}>
+            {/* Collaboration indicators */}
+            {isLockedByOther && <LayerLockIndicator layerId={layer.id} layerName={layer.name} />}
+            {isSelected && !isLockedByOther && <EditingIndicator layerId={layer.id} className="absolute -top-8 right-0 z-20" />}
+
+            {textContent && textContent}
+            {effectiveChildren && effectiveChildren.length > 0 && (
+              <LayerRenderer
+                layers={effectiveChildren}
+                {...sharedRendererProps}
+                isInsideForm={true}
+                parentComponentLayerId={childParentComponentLayerId}
+                parentComponentId={childParentComponentId}
               />
-            </div>
-          </Tag>
+            )}
+          </div>
         );
       }
 
-      if (collectionItems.length === 0) {
-        let emptyMessage = 'No collection items';
-        if (!collectionId) {
-          emptyMessage = 'No collection selected';
-        } else if (sourceFieldType === 'multi_asset' && multiAssetSourceField) {
-          emptyMessage = `The CMS item has no ${multiAssetSourceField.type}s`;
-        }
-        return (
-          <Tag {...elementProps}>
-            <div className="text-muted-foreground text-sm p-4 text-center">
-              {emptyMessage}
-            </div>
-          </Tag>
-        );
-      }
-
-      // Repeat the element for each collection item
+      // In published/preview mode, render the AuthForm component
       return (
-        <>
-          {collectionItems.map((item, index) => {
-            // Get collection fields for reference resolution
-            const collectionFields = collectionId ? fieldsByCollectionId[collectionId] || [] : [];
-
-            // Apply CMS translations to this item's values when localizing so
-            // repeater children render translated text/rich-text values. Mirrors
-            // what the server-side page fetcher does on /preview and published
-            // routes via applyCmsTranslations.
-            const baseItemValues = item.values || {};
-            const translatedItemValues = (currentLocale && !currentLocale.is_default && translations)
-              ? applyCmsTranslations(item.id, baseItemValues, collectionFields, translations, isEditMode ? { includeIncomplete: true } : undefined)
-              : baseItemValues;
-
-            // Resolve reference fields to add relationship paths (e.g., "refFieldId.targetFieldId")
-            const enhancedItemValues = collectionFields.length > 0
-              ? resolveReferenceFieldsSync(
-                translatedItemValues,
-                collectionFields,
-                itemsByCollectionId,
-                fieldsByCollectionId
-              )
-              : translatedItemValues;
-
-            // Merge parent collection data with enhanced item values
-            // Parent data provides access to fields from outer collection layers
-            // Enhanced item values (with resolved references) take precedence
-            const mergedItemData = {
-              ...collectionLayerData,
-              ...enhancedItemValues,
-            };
-
-            // Build layer data map for layer-specific field resolution
-            // Add this collection layer's enhanced data (with resolved references) to the map
-            const updatedLayerDataMap = {
-              ...effectiveLayerDataMap,
-              [layer.id]: enhancedItemValues,
-            };
-
-            // Resolve per-item background image from CMS field variable → CSS variable (combined with gradient)
-            // For multi-asset collections, virtual asset fields (__asset_url etc.) live in
-            // enhancedItemValues only. If the binding was authored with source='page' (legacy),
-            // expose those values via pageCollectionItemData so resolution still succeeds.
-            let itemElementProps = elementProps;
-            if (bgImageVariable && isFieldVariable(bgImageVariable) && bgImageVariable.data.field_id) {
-              const bgPageData = sourceFieldType === 'multi_asset'
-                ? { ...pageCollectionItemData, ...enhancedItemValues }
-                : pageCollectionItemData;
-              const resolvedBgAssetId = resolveFieldValue(bgImageVariable, mergedItemData, bgPageData, updatedLayerDataMap);
-              if (resolvedBgAssetId) {
-                const bgAsset = assetsById[resolvedBgAssetId] || getAsset(resolvedBgAssetId);
-                const bgUrl = bgAsset?.public_url || resolvedBgAssetId;
-                const cssUrl = bgUrl.startsWith('url(') ? bgUrl : `url(${bgUrl})`;
-                itemElementProps = {
-                  ...elementProps,
-                  style: {
-                    ...(elementProps.style as Record<string, unknown> || {}),
-                    '--bg-img': combineBgValues(cssUrl, staticGradVars?.['--bg-img']),
-                  },
-                };
-              }
-            }
-
-            // For checkbox/radio wrappers, always inject checked attribute so inputs
-            // stay controlled for their lifetime (avoids uncontrolled→controlled switch)
-            const checkboxDefaultIds = layer.settings?.optionsSource?.defaultItemIds;
-            const radioDefaultId = layer.settings?.optionsSource?.defaultItemId;
-            const isOptionsSourceLayer = !!layer.settings?.optionsSource?.collectionId;
-            const itemChildren = (isOptionsSourceLayer && effectiveChildren)
-              ? effectiveChildren.map(child => {
-                if (child.name !== 'input') return child;
-                if (child.attributes?.type === 'checkbox') {
-                  const isChecked = checkboxDefaultIds?.includes(item.id) ? 'true' : 'false';
-                  return { ...child, attributes: { ...child.attributes, checked: isChecked } };
-                }
-                if (child.attributes?.type === 'radio') {
-                  const isChecked = radioDefaultId === item.id ? 'true' : 'false';
-                  return { ...child, attributes: { ...child.attributes, checked: isChecked } };
-                }
-                return child;
-              })
-              : effectiveChildren;
-
-            return (
-              <Tag
-                key={item.id}
-                {...itemElementProps}
-                data-collection-item-id={item.id}
-                data-layer-id={layer.id} // Keep same layer ID for all instances
-              >
-                {textContent && textContent}
-
-                {itemChildren && itemChildren.length > 0 && (
-                  <LayerRenderer
-                    layers={itemChildren}
-                    onLayerClick={onLayerClick}
-                    onLayerUpdate={onLayerUpdate}
-                    onLayerHover={onLayerHover}
-                    selectedLayerId={selectedLayerId}
-                    hoveredLayerId={hoveredLayerId}
-                    isEditMode={isEditMode}
-                    isPublished={isPublished}
-                    enableDragDrop={enableDragDrop}
-                    activeLayerId={activeLayerId}
-                    projected={projected}
-                    pageId={pageId}
-                    collectionItemData={mergedItemData}
-                    collectionItemId={item.id}
-                    layerDataMap={updatedLayerDataMap}
-                    pageCollectionItemId={pageCollectionItemId}
-                    pageCollectionItemData={
-                      sourceFieldType === 'multi_asset' && sourceFieldSource === 'page'
-                        ? { ...pageCollectionItemData, ...enhancedItemValues }
-                        : pageCollectionItemData
-                    }
-                    pageCollectionSortedItemIds={pageCollectionSortedItemIds}
-                    hiddenLayerInfo={hiddenLayerInfo}
-                    editorHiddenLayerIds={editorHiddenLayerIds}
-                    editorBreakpoint={editorBreakpoint}
-                    currentLocale={currentLocale}
-                    availableLocales={availableLocales}
-                    liveLayerUpdates={liveLayerUpdates}
-                    parentComponentLayerId={childParentComponentLayerId}
-                    parentComponentId={childParentComponentId}
-                    parentComponentOverrides={parentComponentOverrides}
-                    parentComponentVariables={parentComponentVariables}
-                    editingComponentVariables={editingComponentVariables}
-                    isInsideForm={isInsideForm || htmlTag === 'form'}
-                    isInsideLink={isInsideLink || htmlTag === 'a'}
-                    parentFormSettings={htmlTag === 'form' ? layer.settings?.form : parentFormSettings}
-                    pages={pages}
-                    folders={folders}
-                    collectionItemSlugs={collectionItemSlugs}
-                    isPreview={isPreview}
-                    translations={translations}
-                    anchorMap={anchorMap}
-                    resolvedAssets={resolvedAssets}
-                    components={componentsProp}
-                    ancestorComponentIds={effectiveAncestorIds}
-                    isSlideChild={layer.name === 'slides'}
-                    serverSettings={serverSettings}
-                    onComponentEdit={onComponentEdit}
-                    lcpCandidateLayerId={lcpCandidateLayerId}
-                  />
-                )}
-              </Tag>
-            );
-          })}
-        </>
+        <AuthForm
+          type={authType as 'login' | 'register'}
+          className={fullClassName}
+          style={mergedStyle}
+          layerId={layer.id}
+          redirectUrl={layer.settings?.auth?.redirectUrl}
+        >
+          {effectiveChildren && effectiveChildren.length > 0 && (
+            <LayerRenderer
+              layers={effectiveChildren}
+              {...sharedRendererProps}
+              isInsideForm={true}
+              parentComponentLayerId={childParentComponentLayerId}
+              parentComponentId={childParentComponentId}
+            />
+          )}
+        </AuthForm>
       );
+    }
+
+    // Special handling for User Status component
+    if (layer.name === 'user_status') {
+      const loginUrl = layer.settings?.auth?.loginUrl || '/login';
+      const profileLinks = layer.settings?.auth?.profileLinks || [];
+
+      if (isEditMode) {
+        return (
+          <div
+            {...elementProps} style={mergedStyle}
+            className={clsx(fullClassName, 'flex items-center gap-2 border border-dashed border-primary/30 p-1 rounded')}
+          >
+             {/* Collaboration indicators */}
+             {isLockedByOther && <LayerLockIndicator layerId={layer.id} layerName={layer.name} />}
+             {isSelected && !isLockedByOther && <EditingIndicator layerId={layer.id} className="absolute -top-8 right-0 z-20" />}
+             
+             <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center">
+               <Icon name="user" className="size-4 text-primary" />
+             </div>
+             <span className="text-xs font-medium">User Status</span>
+          </div>
+        );
+      }
+
+      return (
+        <UserStatus
+          className={fullClassName}
+          style={mergedStyle}
+          loginUrl={loginUrl}
+          profileLinks={profileLinks}
+        />
+      );
+    }
+
+    // Collection layers - repeat the element for each item (design applies to each looped item)
+    if (isCollectionLayer) {
+      if (isEditMode) {
+        if (isLoadingLayerData) {
+          if (isSlideChild) return null;
+          return (
+            <Tag {...elementProps}>
+              <div className="w-full p-4">
+                <ShimmerSkeleton
+                  count={3}
+                  height="60px"
+                  gap="1rem"
+                />
+              </div>
+            </Tag>
+          );
+        }
+
+        if (collectionItems.length === 0) {
+          let emptyMessage = 'No collection items';
+          if (!collectionId) {
+            emptyMessage = 'No collection selected';
+          } else if (sourceFieldType === 'multi_asset' && multiAssetSourceField) {
+            emptyMessage = `The CMS item has no ${multiAssetSourceField.type}s`;
+          }
+          return (
+            <Tag {...elementProps}>
+              <div className="text-muted-foreground text-sm p-4 text-center">
+                {emptyMessage}
+              </div>
+            </Tag>
+          );
+        }
+
+        // Repeat the element for each collection item
+        return (
+          <>
+            {collectionItems.map((item, index) => {
+              // Get collection fields for reference resolution
+              const collectionFields = collectionId ? fieldsByCollectionId[collectionId] || [] : [];
+
+              // Apply CMS translations to this item's values when localizing
+              const baseItemValues = item.values || {};
+              const translatedItemValues = (currentLocale && !currentLocale.is_default && translations)
+                ? applyCmsTranslations(item.id, baseItemValues, collectionFields, translations, { includeIncomplete: true })
+                : baseItemValues;
+
+              // Resolve reference fields
+              const enhancedItemValues = collectionFields.length > 0
+                ? resolveReferenceFieldsSync(
+                  translatedItemValues,
+                  collectionFields,
+                  itemsByCollectionId,
+                  fieldsByCollectionId
+                )
+                : translatedItemValues;
+
+              const mergedItemData = {
+                ...collectionLayerData,
+                ...enhancedItemValues,
+              };
+
+              const updatedLayerDataMap = {
+                ...effectiveLayerDataMap,
+                [layer.id]: enhancedItemValues,
+              };
+
+              let itemElementProps = elementProps;
+              if (bgImageVariable && isFieldVariable(bgImageVariable) && bgImageVariable.data.field_id) {
+                const bgPageData = sourceFieldType === 'multi_asset'
+                  ? { ...pageCollectionItemData, ...enhancedItemValues }
+                  : pageCollectionItemData;
+                const resolvedBgAssetId = resolveFieldValue(bgImageVariable, mergedItemData, bgPageData, updatedLayerDataMap);
+                if (resolvedBgAssetId) {
+                  const bgAsset = assetsById[resolvedBgAssetId] || getAsset(resolvedBgAssetId);
+                  const bgUrl = bgAsset?.public_url || resolvedBgAssetId;
+                  const cssUrl = bgUrl.startsWith('url(') ? bgUrl : `url(${bgUrl})`;
+                  itemElementProps = {
+                    ...elementProps,
+                    style: {
+                      ...(elementProps.style as Record<string, unknown> || {}),
+                      '--bg-img': combineBgValues(cssUrl, staticGradVars?.['--bg-img']),
+                    },
+                  };
+                }
+              }
+
+              // For checkbox/radio wrappers, always inject checked attribute
+              const checkboxDefaultIds = layer.settings?.optionsSource?.defaultItemIds;
+              const radioDefaultId = layer.settings?.optionsSource?.defaultItemId;
+              const isOptionsSourceLayer = !!layer.settings?.optionsSource?.collectionId;
+              const itemChildren = (isOptionsSourceLayer && effectiveChildren)
+                ? effectiveChildren.map(child => {
+                  if (child.name !== 'input') return child;
+                  if (child.attributes?.type === 'checkbox') {
+                    const isChecked = checkboxDefaultIds?.includes(item.id) ? 'true' : 'false';
+                    return { ...child, attributes: { ...child.attributes, checked: isChecked } };
+                  }
+                  if (child.attributes?.type === 'radio') {
+                    const isChecked = radioDefaultId === item.id ? 'true' : 'false';
+                    return { ...child, attributes: { ...child.attributes, checked: isChecked } };
+                  }
+                  return child;
+                })
+                : effectiveChildren;
+
+              return (
+                <Tag
+                  key={item.id}
+                  {...itemElementProps}
+                  data-collection-item-id={item.id}
+                  data-layer-id={layer.id}
+                >
+                  {textContent && textContent}
+
+                  {itemChildren && itemChildren.length > 0 && (
+                    <LayerRenderer
+                      layers={itemChildren}
+                      onLayerClick={onLayerClick}
+                      onLayerUpdate={onLayerUpdate}
+                      onLayerHover={onLayerHover}
+                      selectedLayerId={selectedLayerId}
+                      hoveredLayerId={hoveredLayerId}
+                      isEditMode={isEditMode}
+                      isPublished={isPublished}
+                      enableDragDrop={enableDragDrop}
+                      activeLayerId={activeLayerId}
+                      projected={projected}
+                      pageId={pageId}
+                      collectionItemData={mergedItemData}
+                      collectionItemId={item.id}
+                      layerDataMap={updatedLayerDataMap}
+                      pageCollectionItemId={pageCollectionItemId}
+                      pageCollectionItemData={
+                        sourceFieldType === 'multi_asset' && sourceFieldSource === 'page'
+                          ? { ...pageCollectionItemData, ...enhancedItemValues }
+                          : pageCollectionItemData
+                      }
+                      pageCollectionSortedItemIds={pageCollectionSortedItemIds}
+                      hiddenLayerInfo={hiddenLayerInfo}
+                      editorHiddenLayerIds={editorHiddenLayerIds}
+                      editorBreakpoint={editorBreakpoint}
+                      currentLocale={currentLocale}
+                      availableLocales={availableLocales}
+                      liveLayerUpdates={liveLayerUpdates}
+                      parentComponentLayerId={childParentComponentLayerId}
+                      parentComponentId={childParentComponentId}
+                      parentComponentOverrides={parentComponentOverrides}
+                      parentComponentVariables={parentComponentVariables}
+                      editingComponentVariables={editingComponentVariables}
+                      isInsideForm={isInsideForm || htmlTag === 'form'}
+                      isInsideLink={isInsideLink || htmlTag === 'a'}
+                      parentFormSettings={htmlTag === 'form' ? layer.settings?.form : parentFormSettings}
+                      pages={pages}
+                      folders={folders}
+                      collectionItemSlugs={collectionItemSlugs}
+                      isPreview={isPreview}
+                      translations={translations}
+                      anchorMap={anchorMap}
+                      resolvedAssets={resolvedAssets}
+                      components={componentsProp}
+                      ancestorComponentIds={effectiveAncestorIds}
+                      isSlideChild={layer.name === 'slides'}
+                      serverSettings={serverSettings}
+                      onComponentEdit={onComponentEdit}
+                      lcpCandidateLayerId={lcpCandidateLayerId}
+                    />
+                  )}
+                </Tag>
+              );
+            })}
+          </>
+        );
+      }
+
+      // In non-edit mode (preview/published), collections are handled by the server
+      // transformation into _fragments. If we still see a 'collection' layer here
+      // without an item ID, it means it's a template element - render nothing.
+      if (!isEditMode && !layer._collectionItemId) {
+        return null;
+      }
     }
 
     // Special handling for locale selector wrapper (name='localeSelector')
