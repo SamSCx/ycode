@@ -208,6 +208,8 @@ const LayerRendererPublic: React.FC<LayerRendererPublicProps> = ({
               collectionLayerClasses={layer._filterConfig!.collectionLayerClasses}
               collectionLayerTag={layer._filterConfig!.collectionLayerTag}
               isPublished={layer._filterConfig!.isPublished}
+              userScope={layer._filterConfig!.userScope}
+              userScopeFieldId={layer._filterConfig!.userScopeFieldId}
             >
               {content}
             </FilterableCollection>

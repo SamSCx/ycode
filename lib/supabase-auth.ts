@@ -4,7 +4,7 @@
  */
 
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { credentials } from '@/lib/credentials';
 import { parseSupabaseConfig } from '@/lib/supabase-config-parser';
 import { AuthRole, AUTH_ROLES } from './auth-constants';
@@ -68,10 +68,33 @@ export async function getAdminUser(): Promise<AuthResult | null> {
 /**
  * Get the authenticated site user.
  * Allows both 'user' and 'admin' roles.
+ * Supports simulation via 'x-ycode-preview-user-id' header for admins.
  */
 export async function getSiteUser(): Promise<AuthResult | null> {
   const result = await getAuthUser();
   if (!result) return null;
+
+  // Check for preview user ID simulation (only allowed for admins)
+  const headerList = await headers();
+  const cookieStore = await cookies();
+  
+  const previewUserIdHeader = headerList.get('x-ycode-preview-user-id');
+  const previewUserIdCookie = cookieStore.get('ycode_preview_user_id')?.value;
+  const previewUserId = previewUserIdHeader || previewUserIdCookie;
+  
+  const isAdmin = result.user.app_metadata?.role === AUTH_ROLES.ADMIN;
+
+  if (previewUserId && isAdmin) {
+    // Return a mocked result with the preview user ID
+    // We clone the actual user but overwrite the ID
+    return {
+      ...result,
+      user: {
+        ...result.user,
+        id: previewUserId,
+      },
+    };
+  }
 
   const role = result.user.app_metadata?.role;
   if (role === AUTH_ROLES.USER || role === AUTH_ROLES.ADMIN) {

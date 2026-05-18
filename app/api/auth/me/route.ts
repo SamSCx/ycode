@@ -3,6 +3,7 @@ import { getSiteUser } from '@/lib/supabase-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { USERS_COLLECTION_ID } from '@/lib/auth-constants';
 import { getAuthTranslation } from '@/lib/services/authLocalisationService';
+import { noCache } from '@/lib/api-response';
 
 /**
  * GET /api/auth/me
@@ -22,14 +23,14 @@ export async function GET(request: Request) {
 
     const auth = await getSiteUser();
     if (!auth || !auth.user) {
-      return NextResponse.json({ user: null, labels });
+      return noCache({ user: null, labels });
     }
 
     const { user } = auth;
     
     // Fetch CMS profile data
     const adminClient = await getSupabaseAdmin();
-    if (!adminClient) return NextResponse.json({ user });
+    if (!adminClient) return noCache({ user });
 
     // Find the 'supabase_user_id' field ID
     const { data: fieldData } = await adminClient
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
             cmsData[key] = pv.value;
           });
 
-          return NextResponse.json({
+          return noCache({
             user: {
               ...user,
               cms_profile: cmsData,
@@ -80,10 +81,10 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ user, labels });
+    return noCache({ user, labels });
 
   } catch (error) {
     console.error('Error fetching user session:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return noCache({ error: 'Internal server error' }, 500);
   }
 }

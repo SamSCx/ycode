@@ -32,6 +32,7 @@ import LayerContextMenu from '@/app/(builder)/ycode/components/LayerContextMenu'
 import CanvasTextEditor from '@/app/(builder)/ycode/components/CanvasTextEditor';
 import { useComponentsStore } from '@/stores/useComponentsStore';
 import { useCollectionLayerStore } from '@/stores/useCollectionLayerStore';
+import { useCurrentUserStore } from '@/stores/useCurrentUserStore';
 import { useFilterStore } from '@/stores/useFilterStore';
 import { useCollectionsStore } from '@/stores/useCollectionsStore';
 import { useAssetsStore } from '@/stores/useAssetsStore';
@@ -267,6 +268,8 @@ const LayerRenderer: React.FC<LayerRendererProps> = ({
               collectionLayerClasses={layer._filterConfig!.collectionLayerClasses}
               collectionLayerTag={layer._filterConfig!.collectionLayerTag}
               isPublished={layer._filterConfig!.isPublished}
+              userScope={layer._filterConfig!.userScope}
+              userScopeFieldId={layer._filterConfig!.userScopeFieldId}
             >
               {content}
             </FilterableCollection>
@@ -464,6 +467,10 @@ const LayerItemImpl: React.FC<{
   componentRootContextMenu,
   lcpCandidateLayerId,
 }) => {
+  const previewUserId = usePagesStore((s) => s.previewUserId);
+  const isPreviewMode = useEditorStore((s) => s.isPreviewMode);
+  const currentUserProfile = useCurrentUserStore((s) => s.profile);
+
   // Subscribe to selection state from the store for reactive updates without
   // forcing the entire LayerRenderer tree to re-render when selection changes
   const isSelected = useEditorStore((state) => state.selectedLayerId === layer.id);
@@ -487,7 +494,8 @@ const LayerItemImpl: React.FC<{
   const effectiveLayerDataMap = React.useMemo(() => ({
     ...layerDataMap,
     ...(layer._layerDataMap || {}),
-  }), [layerDataMap, layer._layerDataMap]);
+    ...(currentUserProfile ? { current_user: currentUserProfile } : {}),
+  }), [layerDataMap, layer._layerDataMap, currentUserProfile]);
   // Track component scope for circular reference detection (works in both edit and published modes)
   const effectiveAncestorIds = useMemo(() => {
     if (!layer.componentId) return ancestorComponentIds;
@@ -1386,7 +1394,10 @@ const LayerItemImpl: React.FC<{
       sortBy,
       sortOrder,
       collectionVariable.limit,
-      collectionVariable.offset
+      collectionVariable.offset,
+      undefined,
+      collectionVariable.userScope,
+      collectionVariable.userScopeFieldId
     );
   }, [
     isEditMode,
@@ -1398,6 +1409,9 @@ const LayerItemImpl: React.FC<{
     collectionVariable?.sort_order_inputLayerId,
     collectionVariable?.limit,
     collectionVariable?.offset,
+    collectionVariable?.userScope,
+    collectionVariable?.userScopeFieldId,
+    isPreviewMode,
     optionsSourceSort?.sortFieldId,
     optionsSourceSort?.sortOrder,
     sortByInputDefaultValue,
@@ -2969,6 +2983,7 @@ const LayerItemImpl: React.FC<{
 
       return (
         <UserStatus
+          key={`${layer.id}-${previewUserId}-${isPreviewMode}`}
           className={fullClassName}
           style={mergedStyle}
           loginUrl={loginUrl}
