@@ -19,6 +19,10 @@
    sidebar/modal/dropdown utilities by excluding the route group. */
 @source not "../app/(builder)";
 
+/* Tool docs use placeholder class syntax that is not valid CSS. */
+@source not "../lib/mcp";
+@source not "../lib/agent";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
